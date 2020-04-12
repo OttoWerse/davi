@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="d3.min.js"></script>
+</head>
+
+<body>
+
+<style type="text/css">
+    .axis {
+        stroke: black;
+        shape-rendering: crispEdges;
+        stroke-opacity: 0.5;
+    }
+</style>
+
+<script type="text/javascript">
+    var height = 500,
+        width = 500,
+        marginX = 50,
+        marginY = 15,
+        axisHeight = height - 2 * marginY
+    ;
+
+    var svg = d3.select("body").append("svg")
+        .attr("class", "axis")
+        .attr("width", width)
+        .attr("height", height)
+    ;
+
+    var scale1 = d3.scaleLinear()
+        .domain([0, 1000])
+        .range([0, axisHeight])
+    ;
+
+    var axis1 = d3.axisLeft()
+        .scale(scale1)
+        .ticks(5)
+        .tickSize(12)
+        .tickPadding(10)
+    ;
+
+    svg.append("g")
+        .attr("transform", function () {
+            return "translate(" + marginX +
+                "," + marginY + ")";
+        })
+        .call(axis1);
+
+    var scale2 = d3.scalePow()
+        .domain([0, 1000])
+        .range([0, axisHeight])
+        .exponent(2)
+    ;
+
+    var axis2 = d3.axisLeft()
+        .scale(scale2)
+        .ticks(5)
+        .tickSize(12)
+        .tickPadding(10)
+    ;
+
+    svg.append("g")
+        .attr("transform", function () {
+            return "translate(" + 3 * marginX +
+                "," + marginY + ")";
+        })
+        .call(axis2);
+
+    var scale3 = d3.scaleTime()
+        .domain([new Date("2015-12-31"), new Date("2017-01-01")])
+        .range([0, axisHeight])
+    ;
+
+    var axis3 = d3.axisLeft()
+        .scale(scale3)
+        .ticks(5)
+        .tickSize(12)
+        .tickPadding(10)
+    ;
+
+    svg.append("g")
+        .attr("transform", function () {
+            return "translate(" + 5 * marginX +
+                "," + marginY + ")";
+        })
+        .call(axis3);
+</script>
+
+</body>
+
+</html>

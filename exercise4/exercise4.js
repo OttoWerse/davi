@@ -41,13 +41,20 @@ for (i = 0; i < 10; i++) {
 
 // A2
 currentHeight += (rect_height + margin)
+start = 0
 translation = 120
 steps = 7
+
+var rtg = d3.scaleLinear()
+    .domain([0, steps-1])
+    .range([start, translation])
+;
+
 for (i = 0; i < 7; i++) {
     svg.append("rect")
         .attr("height", rect_height)
         .attr("width", rect_width)
-        .attr("fill", d3.hsl((translation / (steps - 1) * i), 1, 0.5))
+        .attr("fill", d3.hsl(rtg(i), 1, 0.5))
         .attr("x", marginLeft + rect_width * i)
         .attr("y", currentHeight)
     ;

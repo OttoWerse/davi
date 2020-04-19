@@ -1,0 +1,1 @@
+Der Broswer zeigt RGB Werte an, da die Hardware (Bildschirm) damit arbeitet.

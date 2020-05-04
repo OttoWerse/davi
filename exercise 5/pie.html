@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>D3: Pie layout</title>
+    <script src="../d3.min.js"></script>
+    <style type="text/css">
+        text.pie {
+            font-family: sans-serif;
+            font-size: 12px;
+            fill: white;
+        }
+
+        text {
+            font-family: serif;
+            font-size: 12px;
+            fill: black;
+        }
+    </style>
+</head>
+<body>
+<h1>Aufgabe 1a</h1>
+<script type="text/javascript">
+
+    var w = 300;
+    var h = 300;
+
+    var dataset = [8, 20, 45, 12, 15];
+
+    var thickness = 45;
+    var outerRadius = w / 2;
+    var innerRadius = outerRadius - thickness;
+
+    var arc = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius);
+
+    var pie = d3.pie()
+
+    var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    //Create SVG element
+    var svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    //Set up groups
+    var arcs = svg.selectAll("g")
+        .data(pie(dataset))
+        .enter()
+        .append("g")
+        .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+
+    //Draw arc paths
+    arcs.append("path")
+        .attr("fill", function (d, i) {
+            return color(i);
+        })
+        .attr("d", arc);
+
+    //Labels
+    arcs.append("text")
+        .attr('class', 'pie')
+        .attr("transform", function (d) {
+            return "translate(" + arc.centroid(d) + ")";
+        })
+        .attr("text-anchor", "middle")
+        .text(function (d) {
+            return d.value;
+        });
+
+</script>
+<h1>Aufgabe 1b</h1>
+<script type="text/javascript">
+
+    var w = 300;
+    var h = 300;
+
+    var dataset = [8, 20, 45, 12, 15];
+
+    var outerRadius = w / 2;
+    var innerRadius = 0;
+
+    var arc = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius)
+    ;
+
+    var pie = d3.pie()
+        .startAngle(-0.5 * Math.PI)
+        .endAngle(0.5 * Math.PI)
+    ;
+
+    var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    //Create SVG element
+    var svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    //Set up groups
+    var arcs = svg.selectAll("g")
+        .data(pie(dataset))
+        .enter()
+        .append("g")
+        .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+
+    //Draw arc paths
+    arcs.append("path")
+        .attr("fill", function (d, i) {
+            return color(i);
+        })
+        .attr("d", arc);
+
+    //Labels
+    arcs.append("text")
+        .attr('class', 'pie')
+        .attr("transform", function (d) {
+            return "translate(" + arc.centroid(d) + ")";
+        })
+        .attr("text-anchor", "middle")
+        .text(function (d) {
+            return d.value;
+        });
+
+</script>
+<h1>Aufgabe 2</h1>
+<script type="text/javascript">
+    var margin = 30;
+    var width = 420;
+    var height = 300;
+
+    var data = [
+        {x: 0, y: 10,},
+        {x: 1, y: 15,},
+        {x: 2, y: 35,},
+        {x: 3, y: 20,},
+    ];
+
+    var chart = d3.select("body");
+
+    var svg = chart.append('svg')
+        .attr('width', width + 2 * margin)
+        .attr('height', height + 2 * margin)
+    ;
+
+    xScale = d3.scaleLinear()
+        .domain([0, 3])
+        .range([0, width])
+    ;
+
+    xAxis = d3.axisBottom()
+        .scale(xScale)
+        .ticks(7)
+        .tickSize(5)
+        .tickPadding(5)
+    ;
+
+    yScale = d3.scaleLinear()
+        .domain([0, 35])
+        .range([0, -height])
+    ;
+
+    yAxis = d3.axisLeft()
+        .scale(yScale)
+        .ticks(7)
+        .tickSize(5)
+        .tickPadding(5)
+    ;
+
+    g = svg.append('g')
+        .attr('transform', `translate(${margin},${margin + height})`)
+    ;
+    g.append('g').call(xAxis);
+    g.append('g').call(yAxis);
+
+    g.append('path')
+        .datum(data)
+        .attr('fill', 'steelblue')
+        .attr('d', d3.area()
+            .x(function(d) {return xScale(d.x)})
+            .y0(yScale(0))
+            .y1(function(d) {return yScale(d.y)})
+        )
+</script>
+<h1>Aufgabe 3</h1>
+<text>Heatmaps dienen der Visualisierung von Daten, welche zueinander in relation stehen, indem diese in einer Matrix positioniert werden, und die jeweiligen Kombinationen mittels Farben bzw. Helligkeiten nach ihrer Häufigkeit hervorgehoben werden.
+
+    Hierbei ist es wichtig, nur Daten in Relation zu bringen, welche auch in relation zueinander stehen.
+    Außerdem sollte darauf geachtet werden, dass die Datensätze nicht zu groß werden, und das es nicht zu viele abstufungen in den Häufigkeiten gibt, da sonst recht schnell unklar wird, um welche Abstufung es sich handelt.
+    Farbwahl ist hierbei ebenfalls wichtig, klasssischerweise verwendet man hiebei einen Farbbereich von Gelb bis Rot beim Farbwechsel, oder alternativ Intensitätsabstufungen von einer einzigen beliebigen Farbe.
+
+    Beliebte Varianten sind z.B. Heatmaps auf Karten oder Webseiten, welche Bevölkerung oder Klickdichte darstellen.</text>
+</body>
+</html>

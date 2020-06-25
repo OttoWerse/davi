@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="../d3.min.js"></script>
+    <style> /* set the CSS */
+
+    div.tooltip {
+        position: absolute;
+        text-align: center;
+        width: 60px;
+        height: 28px;
+        padding: 2px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+    }
+
+    </style>
+
+</head>
+<body>
+<script type="text/javascript">
+    // select the body
+    let body = d3.select("body");
+
+    steps = 100;
+    ticks = 10;
+
+    // Dimensions
+    let map_width = 450;
+    let map_height = 600;
+
+    let scale_width = 100
+    let scale_height = map_height
+
+    let margin_top = 10;
+    let margin_bottom = 10;
+    let margin_left = 0;
+    let margin_right = 0;
+
+    let page_width = margin_left + margin_right + 2 * (map_width + scale_width);
+    let page_height = map_height + margin_top + margin_bottom;
+
+    let rect_height = (page_height - margin_top - margin_bottom) / steps
+    let rect_width = 20
+
+    //Define map projection
+    let projection = d3.geoAlbers()
+        .center([11, 51])
+        .rotate(90)
+        .parallels([49, 53])
+        .translate([235, 275])
+        .scale(4000);
+
+    //Define path generator
+    let geodata_path = d3.geoPath()
+        .projection(projection);
+
+    //Add the label
+    let tooltip = body
+        .append("div")
+        .attr("class", "tooltip")
+        .style('opacity', 0)
+
+    //Create SVG element
+    let map_1_svg_container = body
+        .append("svg")
+        .attr("width", map_width)
+        .attr("height", map_height);
+
+    //Create SVG element
+    let scale_1_svg_container = body
+        .append("svg")
+        .attr("width", scale_width)
+        .attr("height", page_height);
+
+    //Create SVG element
+    let map_2_svg_container = body
+        .append("svg")
+        .attr("width", map_width)
+        .attr("height", page_height);
+
+    //Create SVG element
+    let scale_2_svg_container = body
+        .append("svg")
+        .attr("width", scale_width)
+        .attr("height", page_height);
+
+
+    Promise.all([
+        d3.json("laender.json"),
+        d3.text("regional_averages_tm_year.txt"),
+        d3.text("regional_averages_rr_year.txt"),
+        d3.text("regional_averages_sd_year.txt")
+    ]).then(function (files) {
+        ssv = d3.dsvFormat(';');
+        let geo_data = files[0]
+        let temp_data = files[1]
+        temp_data = temp_data.replace(new RegExp(";Jahr;", 'g'), ";")
+        temp_data = temp_data.replace(new RegExp(";year;", 'g'), ";")
+        temp_data = temp_data.replace(new RegExp("/", 'g'), "")
+        temp_data = temp_data.replace(new RegExp("-", 'g'), "")
+        temp_data = ssv.parse(temp_data)
+
+        let rain_data = files[2]
+        rain_data = rain_data.replace(new RegExp(";Jahr;", 'g'), ";")
+        rain_data = rain_data.replace(new RegExp(";year;", 'g'), ";")
+        rain_data = rain_data.replace(new RegExp("/", 'g'), "")
+        rain_data = rain_data.replace(new RegExp("-", 'g'), "")
+        rain_data = ssv.parse(rain_data)
+
+        let sun_data = files[3]
+        sun_data = sun_data.replace(new RegExp(";Jahr;", 'g'), ";")
+        sun_data = sun_data.replace(new RegExp(";year;", 'g'), ";")
+        sun_data = sun_data.replace(new RegExp("/", 'g'), "")
+        sun_data = sun_data.replace(new RegExp("-", 'g'), "")
+        sun_data = ssv.parse(sun_data)
+
+        let temp_min = 6
+        let temp_max = 12
+        let temp_color_scale = d3.scaleLinear()
+            .domain([temp_min, temp_max])
+            .range(["#00BCD4", "#f44336"])
+        let temp_position_scale = d3.scaleLinear()
+            .domain([temp_min, temp_max])
+            .range([page_height - margin_bottom, 0 + margin_top])
+        ;
+
+        let rain_min = 0
+        let rain_max = 1000
+        let rain_color_scale = d3.scaleLinear()
+            .domain([rain_min, rain_max])
+            .range(["#E8EAF6", "#1A237E"])
+        let rain_position_scale = d3.scaleLinear()
+            .domain([rain_min, rain_max])
+            .range([page_height - margin_bottom, 0 + margin_top])
+        ;
+
+        let sun_min = 0
+        let sun_max = 3000
+        let sun_color_scale = d3.scaleLinear()
+            .domain([sun_min, sun_max])
+            .range(["#3F51B5", "#FFEB3B"])
+        let sun_position_cale = d3.scaleLinear()
+            .domain([sun_min, sun_max])
+            .range([page_height - margin_bottom, 0 + margin_top])
+        ;
+
+        function getColorFromColorScale(current_data, value) {
+            switch (current_data) {
+                case "temp_data":
+                    color = temp_color_scale;
+                    number = 1881;
+                    break;
+                case "rain_data":
+                    color = rain_color_scale;
+                    number = 1881;
+                    break;
+                case "sun_data":
+                    color = sun_color_scale;
+                    number = 1951;
+                    break;
+                default:
+                    break;
+            }
+            return color(value)
+        }
+
+        function getPositionScale(current_data) {
+            switch (current_data) {
+                case "temp_data":
+                    scale = temp_position_scale;
+                    break;
+                case "rain_data":
+                    scale = rain_position_scale;
+                    break;
+                case "sun_data":
+                    scale = sun_position_cale;
+                    break;
+                default:
+                    break;
+            }
+            return scale
+        }
+
+        function getMax(data) {
+            switch (data) {
+                case "temp_data":
+                    max = temp_max
+                    break;
+                case "rain_data":
+                    max = rain_max
+                    break;
+                case "sun_data":
+                    max = sun_max
+                    break;
+                default:
+                    break;
+            }
+            return max
+        }
+
+        function getValue(current_data, geo_data_name, year_index) {
+            let array;
+            let year_offset;
+            let value;
+            switch (current_data) {
+                case "temp_data":
+                    array = temp_data;
+                    year_offset = 1881;
+                    break;
+                case "rain_data":
+                    array = rain_data;
+                    year_offset = 1881;
+                    break;
+                case "sun_data":
+                    array = sun_data;
+                    year_offset = 1951;
+                    break;
+                default:
+                    break;
+            }
+            switch (geo_data_name) {
+                case "Berlin":
+                    value = array[year_index - year_offset].BrandenburgBerlin;
+                    break;
+                case "Brandenburg":
+                    value = array[year_index - year_offset].Brandenburg;
+                    break;
+                case "Bremen":
+                    value = array[year_index - year_offset].NiedersachsenHamburgBremen;
+                    break;
+                case "Baden-Wuerttemberg":
+                    value = array[year_index - year_offset].BadenWuerttemberg;
+                    break;
+                case "Bayern":
+                    value = array[year_index - year_offset].Bayern;
+                    break;
+                case "Hamburg":
+                    value = array[year_index - year_offset].NiedersachsenHamburgBremen;
+                    break;
+                case "Hessen":
+                    value = array[year_index - year_offset].Hessen;
+                    break;
+                case "Mecklenburg-Vorpommern":
+                    value = array[year_index - year_offset].MecklenburgVorpommern;
+                    break;
+                case "Niedersachsen":
+                    value = array[year_index - year_offset].Niedersachsen;
+                    break;
+                case "Nordrhein-Westfalen":
+                    value = array[year_index - year_offset].NordrheinWestfalen;
+                    break;
+                case "Rheinland-Pfalz":
+                    value = array[year_index - year_offset].RheinlandPfalz;
+                    break;
+                case "Schleswig-Holstein":
+                    value = array[year_index - year_offset].SchleswigHolstein;
+                    break;
+                case "Saarland":
+                    value = array[year_index - year_offset].Saarland;
+                    break;
+                case "Sachsen":
+                    value = array[year_index - year_offset].Sachsen;
+                    break;
+                case "Sachsen-Anhalt":
+                    value = array[year_index - year_offset].SachsenAnhalt;
+                    break;
+                case "Thueringen":
+                    value = array[year_index - year_offset].Thueringen;
+                    break;
+                default:
+                    return 0
+                    break;
+            }
+            return parseFloat(value)
+        }
+
+        map_1_svg_container.selectAll("path")
+            .data(geo_data.features)
+            .enter()
+            .append("path")
+            .attr("d", geodata_path)
+            .style("fill", "black")
+
+        map_2_svg_container.selectAll("path")
+            .data(geo_data.features)
+            .enter()
+            .append("path")
+            .attr("d", geodata_path)
+            .style("fill", "black")
+
+        for (i = 0; i < steps; i++) {
+            scale_1_svg_container.append("rect")
+                .attr("height", rect_height)
+                .attr("width", rect_width)
+                .attr("id", i)
+                .attr("fill", temp_color_scale(i))
+                .attr("x", 0)
+                .attr("y", (page_height - margin_bottom) - (rect_height + rect_height * i))
+            ;
+        }
+
+        var axis1 = d3.axisRight()
+            .scale(temp_position_scale)
+            .ticks(ticks)
+            .tickSize(12)
+            .tickPadding(10)
+        ;
+
+        axisGroup1 = scale_1_svg_container.append("g")
+            .attr("transform", `translate(${20}, ${0})`)
+        axisGroup1.call(axis1);
+
+        for (i = 0; i < steps; i++) {
+            scale_2_svg_container.append("rect")
+                .attr("height", rect_height)
+                .attr("width", rect_width)
+                .attr("id", i)
+                .attr("fill", temp_color_scale(i))
+                .attr("x", 0)
+                .attr("y", (page_height - margin_bottom) - (rect_height + rect_height * i))
+            ;
+        }
+
+        var axis2 = d3.axisRight()
+            .scale(temp_position_scale)
+            .ticks(ticks)
+            .tickSize(12)
+            .tickPadding(10)
+        ;
+
+        let axisGroup2 = scale_2_svg_container.append("g")
+            .attr("transform", `translate(${20}, ${0})`)
+        axisGroup2.call(axis2);
+
+        let dataSelector1 = body.append("select")
+        dataSelector1.append("option").text("Temperatur").attr("value", "temp_data")
+        dataSelector1.append("option").text("Niederschlag").attr("value", "rain_data")
+        dataSelector1.append("option").text("Sonnenschein").attr("value", "sun_data")
+
+        let yearSelector1 = body.append("select")
+
+        let dataSelector2 = body.append("select")
+        dataSelector2.append("option").text("Temperatur").attr("value", "temp_data")
+        dataSelector2.append("option").text("Niederschlag").attr("value", "rain_data")
+        dataSelector2.append("option").text("Sonnenschein").attr("value", "sun_data")
+
+        let yearSelector2 = body.append("select")
+
+        for (let i = 1991; i < 2020; i++) {
+            yearSelector1.append("option").text(i).attr("value", i)
+            yearSelector2.append("option").text(i).attr("value", i)
+        }
+
+        function values() {
+            let aData = dataSelector1.property("value")
+            let bData = dataSelector2.property("value")
+            let aYear = yearSelector1.property("value")
+            let bYear = yearSelector2.property("value")
+            update(aData, bData, aYear, bYear)
+        }
+
+        dataSelector1.on("change", values)
+        dataSelector2.on("change", values)
+        yearSelector1.on("change", values)
+        yearSelector2.on("change", values)
+
+
+        function update(aData, bData, aYear, bYear) {
+            map_1_svg_container.selectAll("path")
+                .style("fill", d => getColorFromColorScale(aData, getValue(aData, d.properties.NAME_1, aYear)))
+                .on("mouseover", function (d) {
+                    tooltip.html(`A: ${getValue(aData, d.properties.NAME_1, aYear)} <br> B: ${getValue(bData, d.properties.NAME_1, bYear)}`)
+                    tooltip.transition()
+                        .style('opacity', 1)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px")
+                    ;
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .style('opacity', 0)
+                });
+
+            map_2_svg_container.selectAll("path")
+                .style("fill", d => getColorFromColorScale(bData, getValue(bData, d.properties.NAME_1, bYear)))
+                .on("mouseover", function (d) {
+                    tooltip.html(`A: ${getValue(bData, d.properties.NAME_1, bYear)} <br> B: ${getValue(aData, d.properties.NAME_1, aYear)}`)
+                    tooltip.transition()
+                        .style('opacity', 1)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px")
+                    ;
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .style('opacity', 0)
+                });
+
+            let max1 = getMax(aData)
+            let factor1 = max1 / steps
+
+            let max2 = getMax(bData)
+            let factor2 = max2 / steps
+
+            scale_1_svg_container.selectAll("rect").each(function (d) {
+                d3.select(this).style("fill", d => getColorFromColorScale(aData, d3.select(this).attr("id") * factor1))
+            })
+
+            scale_2_svg_container.selectAll("rect").each(function (d) {
+                d3.select(this).style("fill", d => getColorFromColorScale(bData, d3.select(this).attr("id") * factor2))
+            })
+
+            axis1.scale(getPositionScale(aData));
+            axisGroup1.call(axis1);
+
+            axis2.scale(getPositionScale(bData));
+            axisGroup2.call(axis2);
+
+        }
+
+        values()
+    })
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="../d3.min.js"></script>
+
+</head>
+<body>
+<script type="text/javascript">
+
+    //Width and height
+    let w = 500;
+    let h = 700;
+
+    //Define map projection
+    let projection = d3.geoAlbers()
+        .center([11, 51])
+        .rotate(90)
+        .parallels([49, 53])
+        .translate([235, 275])
+        .scale(4000);
+
+    //Define path generator
+    let path = d3.geoPath()
+        .projection(projection);
+
+    //Create SVG element
+    let svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    Promise.all([
+        d3.json("laender.json"),
+        d3.csv("quote.csv")
+    ]).then(function (files) {
+        let color = d3.scaleLinear()
+            .domain([d3.min(d3.extent(files[1], d => +d.Prozent)), d3.max(d3.extent(files[1], d => +d.Prozent))])
+            .range(["#8BC34A", "#f44336"])
+
+        //Bind data and create one path per GeoJSON feature
+        svg.selectAll("path")
+            .data(files[0].features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .style("fill", d => color(files[1][d.id].Prozent))
+    })
+
+
+</script>
+</body>
+</html>

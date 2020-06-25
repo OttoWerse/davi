@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="../d3.min.js"></script>
+    <style>
+
+    </style>
+</head>
+<body>
+<script type="text/javascript">
+
+    //Width and height
+    let w = 500;
+    let h = 700;
+
+    //Define map projection
+    let projection = d3.geoAlbers()
+        .center([13.3, 53])
+        .rotate(90)
+        .parallels([49, 53])
+        .translate([235, 275])
+        .scale(10000);
+
+    //Define path generator
+    let path = d3.geoPath()
+        .projection(projection);
+
+    //Create SVG element
+    let svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    let points = [
+        {
+            label: 'Brandenburg',
+            cords: [12.522000, 52.418000]
+        },
+        {
+            label: 'Potsdam',
+            cords: [13.064473, 52.390569]
+        },
+        {
+            label: 'Cottbus',
+            cords: [14.3328679, 51.7563108]
+        },
+    ]
+
+    let duration = 1000;
+
+
+    //Load in GeoJSON data
+    d3.json("laender.json").then(function (json) {
+
+        //Bind data and create one path per GeoJSON feature
+        svg.selectAll("path")
+            .data(json.features)
+            .enter()
+            .filter(d =>
+                d.properties.NAME_1 === 'Berlin' ||
+                d.properties.NAME_1 === 'Brandenburg'
+            )
+            .append("path")
+            .attr("d", path)
+            .style("fill", "lightgreen")
+            .style("stroke", "green")
+            .on("mouseover", function () {
+                d3.select(this)
+                    .style("fill", "green")
+                    .style("stroke", "lightgreen")
+                ;
+            })
+            .on("mouseout", function () {
+                d3.select(this)
+                    .style("fill", "lightgreen")
+                    .style("stroke", "green")
+                ;
+            });
+
+        svg.selectAll("rect")
+            .data(points).enter()
+            .append("rect")
+            .attr('id', d => d.label)
+            .attr("x", d => projection(d.cords)[0] + 3)
+            .attr("y", d => projection(d.cords)[1] - 8)
+            .attr("height", 16)
+            .attr("width", d => d.label.length * 10)
+            .attr('visibility', 'hidden')
+            .style("fill", "red")
+            .style("stroke", "black")
+            .text(d => d.label)
+
+        svg.selectAll("circle")
+            .data(points).enter()
+            .append("circle")
+            .attr('id', d => d.label)
+            .attr("cx", d => projection(d.cords)[0])
+            .attr("cy", d => projection(d.cords)[1])
+            .attr("r", 4)
+            .style("fill", "red")
+            .style("stroke", "black")
+            .attr('opacity', 1)
+            .on("mouseover", function () {
+                //console.log(`#${d3.select(this).attr('id')}`
+                d3.selectAll('circle')
+                    .transition()
+                    .duration(duration / 4)
+                    .attr("r", 0)
+                    .attr('opacity', 0)
+                ;
+                d3.select(`circle#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .duration(duration)
+                    .attr("r", 8)
+                    .attr('opacity', 1)
+                ;
+                d3.select(`text#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .duration(duration)
+                    .attr('opacity', 1)
+                    .attr('visibility', 'visible')
+                ;
+                d3.select(`rect#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .duration(duration)
+                    .attr('opacity', 1)
+                    .attr('visibility', 'visible')
+                ;
+            })
+
+            .on("mouseout", function () {
+                d3.selectAll('circle')
+                    .transition()
+                    .duration(duration)
+                    .attr("r", 4)
+                    .attr('opacity', 1)
+                ;
+                d3.select(`circle#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .duration(duration)
+                    .attr("r", 4)
+                    .attr('opacity', 1)
+                ;
+                d3.select(`text#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .duration(duration)
+                    .attr('opacity', 0)
+                ;
+                d3.select(`text#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .delay(duration)
+                    .attr('visibility', 'hidden')
+                ;
+                d3.select(`rect#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .duration(duration)
+                    .attr('opacity', 0)
+                ;
+                d3.select(`rect#${d3.select(this).attr('id')}`)
+                    .transition()
+                    .delay(duration)
+                    .attr('visibility', 'hidden')
+                ;
+            });
+
+        svg.selectAll("text")
+            .data(points).enter()
+            .append("text")
+            .attr('id', d => d.label)
+            .attr("x", d => projection(d.cords)[0] + 10)
+            .attr("y", d => projection(d.cords)[1] + 5)
+            .attr('visibility', 'hidden')
+            .style("fill", "white")
+            .style("font-family", "consolas")
+            .text(d => d.label)
+
+    });
+
+</script>
+</body>
+</html>
